@@ -1,10 +1,13 @@
 # Databricks notebook source
-# MAGIC %run '../includes/configuration'
-# MAGIC raw_folder_path
+# MAGIC %run "../Includes/configuration"
 
 # COMMAND ----------
 
-# MAGIC %run "Repos/includes/common_functions"
+print(raw_folder_path)
+
+# COMMAND ----------
+
+# MAGIC %run "../Includes/common_functions"
 
 # COMMAND ----------
 
