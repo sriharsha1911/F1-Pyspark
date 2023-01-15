@@ -1,6 +1,18 @@
 # Databricks notebook source
-storage_account_name='f1sa'
-storage_account_key='7lbW/Cb2rarnNH5il8lqOWODP2p0FSetLx7sfQkhGWs68ronFF71+YgwkZmc6BTMw+qeexPsjM1o+AStTY0cAA=='
+dbutils.widgets.text('p_data_source',"")
+data_source=dbutils.get('p_data_source')
+
+# COMMAND ----------
+
+# MAGIC %run "../Includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../Includes/common_functions"
+
+# COMMAND ----------
+
+
 
 spark.conf.set(f"fs.azure.account.key.{storage_account_name}.dfs.core.windows.net",f"{storage_account_key}"
 )
@@ -28,8 +40,8 @@ Results_schema=StructType(fields=[StructField('resultId',IntegerType()),
                                   StructField('statusId',IntegerType())
                                   ])
 
-container_name='raw'
-Results_df=spark.read.json(f"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/results.json",schema=Results_schema)
+
+Results_df=spark.read.json(f"{raw_folder_path}/results.json",schema=Results_schema)
 display(Results_df)
 
 
@@ -47,7 +59,7 @@ Results_df_renamed=Results_df.withColumnRenamed('resultId','result_id') \
 .withColumnRenamed('constructorId','constructor_id').withColumnRenamed('positionText','position_text').withColumnRenamed('positionOrder','position_order').withColumnRenamed('fastestLap','fastest_lap') \
 .withColumnRenamed('fastestlapTime','fastest_lap_time').withColumnRenamed('fastestlapSpeed','fastest_lap_speed').drop(Results_df.statusId).withColumn('date_ingested',current_timestamp())
 
-display(Results_df_renamed)
+
 
 # COMMAND ----------
 
@@ -56,10 +68,14 @@ display(Results_df_renamed)
 
 # COMMAND ----------
 
-container_name='processed'
-Results_df_renamed.write.partitionBy('race_id').parquet(f"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/results",mode='overwrite')
+
+Results_df_renamed.write.partitionBy('race_id').parquet(f"{processed_folder_path}/results",mode='overwrite')
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/results")
+df=spark.read.parquet(f"{processed_folder_path}/results")
 display(df)
+
+# COMMAND ----------
+
+dbutils.notebook.exit("Success")

@@ -1,6 +1,18 @@
 # Databricks notebook source
-storage_account_name='f1sa'
-storage_account_key='7lbW/Cb2rarnNH5il8lqOWODP2p0FSetLx7sfQkhGWs68ronFF71+YgwkZmc6BTMw+qeexPsjM1o+AStTY0cAA=='
+dbutils.widgets.text('p_data_source',"")
+data_source=dbutils.get('p_data_source')
+
+# COMMAND ----------
+
+# MAGIC %run "../Includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../Includes/common_functions"
+
+# COMMAND ----------
+
+
 
 from pyspark.sql.types import StructType,StructField,StringType,IntegerType,DoubleType
 
@@ -17,9 +29,8 @@ races_schema=StructType(fields=[StructField('raceId',IntegerType(),False),
                                    StructField('url',StringType()),
                                   
                                   ])
-container_name = "raw" 
 
-Races_df = spark.read.csv(f"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/races.csv",header=True,schema=races_schema)
+Races_df = spark.read.csv(f"{raw_folder_path}/races.csv",header=True,schema=races_schema)
 
 
 # COMMAND ----------
@@ -42,7 +53,7 @@ from pyspark.sql.functions import concat,lit,to_timestamp
 Races_df_col_rename=Races_df_dropcol.withColumnRenamed('raceId','race_id').withColumnRenamed('year','race_year') \
 .withColumnRenamed('circuitId','circuit_id') \
 .withColumn('race_timestamp', to_timestamp(concat(Races_df_dropcol.date,lit(' '),Races_df_dropcol.time),'yyyy-MM-dd HH:mm:ss' ))
-display(Races_df_col_rename)
+
 
 # COMMAND ----------
 
@@ -53,7 +64,7 @@ display(Races_df_col_rename)
 
 from pyspark.sql.functions import current_timestamp
 Races_df=Races_df_col_rename.withColumn('date_ingested',current_timestamp()).drop('date','time')
-display(Races_df)
+
 
 
 # COMMAND ----------
@@ -63,5 +74,8 @@ display(Races_df)
 
 # COMMAND ----------
 
-container_name='processed'
-Races_df.write.partitionBy('race_year').parquet(f"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/races",mode='overwrite')
+Races_df.write.partitionBy('race_year').parquet(f"{processed_folder_path}/races",mode='overwrit
+
+# COMMAND ----------
+
+dbutils.notebook.exit("Success")

@@ -1,6 +1,18 @@
 # Databricks notebook source
-storage_account_name='f1sa'
-storage_account_key='7lbW/Cb2rarnNH5il8lqOWODP2p0FSetLx7sfQkhGWs68ronFF71+YgwkZmc6BTMw+qeexPsjM1o+AStTY0cAA=='
+dbutils.widgets.text('p_data_source',"")
+data_source=dbutils.get('p_data_source')
+
+# COMMAND ----------
+
+# MAGIC %run "../Includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../Includes/common_functions"
+
+# COMMAND ----------
+
+
 
 spark.conf.set(
  	f"fs.azure.account.key.{storage_account_name}.dfs.core.windows.net",
@@ -28,9 +40,9 @@ driver_schema=StructType(fields=[StructField('driverId',IntegerType()),
                                   StructField('nationality',StringType())
                                ])
 container_name="raw"
-drivers_df=spark.read.json(f"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/drivers.json",schema=driver_schema)
-drivers_df.printSchema()
-display(drivers_df)
+drivers_df=spark.read.json(f"{raw_folder_path}/drivers.json",schema=driver_schema)
+
+
 
 
 # COMMAND ----------
@@ -49,9 +61,13 @@ display(drivers_df_addcol)
 # COMMAND ----------
 
 container_name='processed'
-drivers_df_addcol.write.parquet(f"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/drivers",mode='overwrite')
+drivers_df_addcol.write.parquet(f"{processed_folder_path}/drivers",mode='overwrite')
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/drivers")
+df=spark.read.parquet(f"{processed_folder_path}/drivers")
 display(df)
+
+# COMMAND ----------
+
+dbutils.notebook.exit("Success")
