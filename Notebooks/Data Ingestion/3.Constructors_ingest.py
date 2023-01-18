@@ -1,6 +1,10 @@
 # Databricks notebook source
 dbutils.widgets.text('p_data_source',"")
-data_source=dbutils.get('p_data_source')
+
+
+# COMMAND ----------
+
+data_source=dbutils.widgets.get('p_data_source')
 
 # COMMAND ----------
 
@@ -34,19 +38,20 @@ constructor_df = spark.read.json(f"{raw_folder_path}/constructors.json",schema=c
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp
+from pyspark.sql.functions import current_timestamp, lit
 constructor_df_ren=constructor_df.withColumnRenamed('constructorId','constructor_id').withColumnRenamed('constructorRef','constructor_ref').drop(constructor_df.url) \
-.withColumn('date_ingested',current_timestamp())
+.withColumn('date_ingested',current_timestamp()).withColumn('data_source',lit(data_source))
 
 
 # COMMAND ----------
 
 
 constructor_df_ren.write.parquet(f"{processed_folder_path}/constructors",mode='overwrite')
+constructor_df_ren.write.mode('overwrite').format("parquet").saveAsTable("f1_processed.constructors")
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"{processed_folder_path}/constructors")
+df=spark.read.parquet("dbfs:/user/hive/warehouse/f1_processed.db/constructors")
 display(df)
 
 # COMMAND ----------

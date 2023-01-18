@@ -1,6 +1,6 @@
 # Databricks notebook source
 dbutils.widgets.text('p_data_source',"")
-data_source=dbutils.get('p_data_source')
+data_source=dbutils.widgets.get('p_data_source')
 
 # COMMAND ----------
 
@@ -34,18 +34,19 @@ qualify_df=spark.read.json(f"{raw_folder_path}/qualifying",schema=qualify_schema
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp
+from pyspark.sql.functions import current_timestamp,lit
 qualify_df_renamed=qualify_df.withColumnRenamed('raceId','race_id').withColumnRenamed('driverId','driver_id').withColumnRenamed('qualifyId','qualify_id').withColumnRenamed('constructorId','constructor_id') \
-.withColumn('date_ingested',current_timestamp())
+.withColumn('date_ingested',current_timestamp()).withColumn('data_source',lit(data_source))
 
 
 # COMMAND ----------
 
-qualify_df_renamed.write.parquet(f"{processed_folder_path}/qualifying",mode='overwrite')
+#qualify_df_renamed.write.parquet(f"{processed_folder_path}/qualifying",mode='overwrite')
+qualify_df_renamed.write.mode('overwrite').format("parquet").saveAsTable("f1_processed.qualifying")
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"{processed_folder_path}/qualifying")
+df=spark.read.parquet(f"dbfs:/user/hive/warehouse/f1_processed.db/qualifying")
 display(df)
 
 # COMMAND ----------

@@ -1,6 +1,6 @@
 # Databricks notebook source
 dbutils.widgets.text('p_data_source',"")
-data_source=dbutils.get('p_data_source')
+data_source=dbutils.widgets.get('p_data_source')
 
 # COMMAND ----------
 
@@ -55,17 +55,19 @@ drivers_df=spark.read.json(f"{raw_folder_path}/drivers.json",schema=driver_schem
 from pyspark.sql.functions import current_timestamp
 from pyspark.sql.functions import concat,lit
 drivers_df_addcol=drivers_df.withColumnRenamed('driverID','driver_id').withColumnRenamed('driverRef','driver_ref') \
-.withColumn('date_ingested',current_timestamp()).withColumn('name',concat(drivers_df.name.forename,lit(' '),drivers_df.name.surname)).drop('url')
+.withColumn('date_ingested',current_timestamp()).withColumn('name',concat(drivers_df.name.forename,lit(' '),drivers_df.name.surname)) \
+.withColumn('data_source',lit(data_source)).drop('url')
 display(drivers_df_addcol)
 
 # COMMAND ----------
 
 container_name='processed'
 drivers_df_addcol.write.parquet(f"{processed_folder_path}/drivers",mode='overwrite')
+drivers_df_addcol.write.mode('overwrite').format("parquet").saveAsTable("f1_processed.drivers")
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"{processed_folder_path}/drivers")
+df=spark.read.parquet("dbfs:/user/hive/warehouse/f1_processed.db/drivers")
 display(df)
 
 # COMMAND ----------

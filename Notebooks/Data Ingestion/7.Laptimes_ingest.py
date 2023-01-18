@@ -1,6 +1,6 @@
 # Databricks notebook source
 dbutils.widgets.text('p_data_source',"")
-data_source=dbutils.get('p_data_source')
+data_source=dbutils.widgets.get('p_data_source')
 
 # COMMAND ----------
 
@@ -34,18 +34,20 @@ laptimes_df.count()
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp
-laptimes_df_renamed=laptimes_df.withColumnRenamed('raceId','race_id').withColumnRenamed('driverId','driver_id').withColumn('date_ingested',current_timestamp())
+from pyspark.sql.functions import current_timestamp,lit
+laptimes_df_renamed=laptimes_df.withColumnRenamed('raceId','race_id').withColumnRenamed('driverId','driver_id').withColumn('date_ingested',current_timestamp()) \
+.withColumn('data_source',lit(data_source))
 
 
 # COMMAND ----------
 
 container_name='processed'
-laptimes_df_renamed.write.parquet(f"{processed_folder_path}/lap_times",mode='overwrite')
+#laptimes_df_renamed.write.parquet(f"{processed_folder_path}/lap_times",mode='overwrite')
+laptimes_df_renamed.write.mode('overwrite').format("parquet").saveAsTable("f1_processed.lap_times")
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"{processed_folder_path}/lap_times")
+df=spark.read.parquet(f"dbfs:/user/hive/warehouse/f1_processed.db/lap_times")
 display(df)
 df.count()
 

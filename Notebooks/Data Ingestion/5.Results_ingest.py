@@ -1,6 +1,6 @@
 # Databricks notebook source
 dbutils.widgets.text('p_data_source',"")
-data_source=dbutils.get('p_data_source')
+data_source=dbutils.widgets.get('p_data_source')
 
 # COMMAND ----------
 
@@ -52,12 +52,12 @@ display(Results_df)
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp
+from pyspark.sql.functions import current_timestamp,lit
 Results_df_renamed=Results_df.withColumnRenamed('resultId','result_id') \
                              .withColumnRenamed('raceId','race_id') \
                             .withColumnRenamed('driverId','driver_id') \
 .withColumnRenamed('constructorId','constructor_id').withColumnRenamed('positionText','position_text').withColumnRenamed('positionOrder','position_order').withColumnRenamed('fastestLap','fastest_lap') \
-.withColumnRenamed('fastestlapTime','fastest_lap_time').withColumnRenamed('fastestlapSpeed','fastest_lap_speed').drop(Results_df.statusId).withColumn('date_ingested',current_timestamp())
+.withColumnRenamed('fastestlapTime','fastest_lap_time').withColumnRenamed('fastestlapSpeed','fastest_lap_speed').drop(Results_df.statusId).withColumn('date_ingested',current_timestamp()).withColumn('data_source',lit(data_source))
 
 
 
@@ -69,11 +69,12 @@ Results_df_renamed=Results_df.withColumnRenamed('resultId','result_id') \
 # COMMAND ----------
 
 
-Results_df_renamed.write.partitionBy('race_id').parquet(f"{processed_folder_path}/results",mode='overwrite')
+Results_df_renamed.write.parquet(f"{processed_folder_path}/results",mode='overwrite')
+Results_df_renamed.write.mode('overwrite').format("parquet").saveAsTable("f1_processed.results")
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"{processed_folder_path}/results")
+df=spark.read.parquet(f"dbfs:/user/hive/warehouse/f1_processed.db/results")
 display(df)
 
 # COMMAND ----------

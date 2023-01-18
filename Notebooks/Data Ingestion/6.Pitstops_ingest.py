@@ -1,6 +1,6 @@
 # Databricks notebook source
 dbutils.widgets.text('p_data_source',"")
-data_source=dbutils.get('p_data_source')
+data_source=dbutils.widgets.get('p_data_source')
 
 # COMMAND ----------
 
@@ -34,17 +34,19 @@ pitstops_df=spark.read.json(f"{raw_folder_path}/pit_stops.json",schema=pitstsops
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp
-pitstops_df_renamed=pitstops_df.withColumnRenamed('raceId','race_id').withColumnRenamed('driverId','driver_id').withColumn('date_ingested',current_timestamp())
+from pyspark.sql.functions import current_timestamp,lit
+pitstops_df_renamed=pitstops_df.withColumnRenamed('raceId','race_id').withColumnRenamed('driverId','driver_id').withColumn('date_ingested',current_timestamp()) \
+.withColumn('data_source',lit(data_source))
 
 
 # COMMAND ----------
 
-pitstops_df_renamed.write.parquet(f"{processed_folder_path}/pit_stops",mode='overwrite')
+#pitstops_df_renamed.write.parquet(f"{processed_folder_path}/pit_stops",mode='overwrite')
+pitstops_df_renamed.write.mode('overwrite').format("parquet").saveAsTable("f1_processed.pit_stops")
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"{processed_folder_path}/pit_stops")
+df=spark.read.parquet(f"dbfs:/user/hive/warehouse/f1_processed.db/pit_stops")
 display(df)
 
 # COMMAND ----------

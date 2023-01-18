@@ -3,7 +3,7 @@ dbutils.widgets.text('p_data_source',"")
 
 # COMMAND ----------
 
-data_source=dbutils.get('p_data_source')
+data_sour=dbutils.widgets.get("p_data_source")
 
 # COMMAND ----------
 
@@ -56,7 +56,7 @@ circuits_df_sel=circuits_df.select(circuits_df.circuitId,circuits_df.circuitRef,
 # COMMAND ----------
 
 from pyspark.sql.functions import lit
-circuit_df_cols_rename=circuits_df_sel.withColumnRenamed('circuitId','circuit_id').withColumnRenamed('circuitRef','circuit_ref').withColumnRenamed('lat','latitude').withColumnRenamed('lng','longitude').withColumn('data_source',lit(data_source))
+circuit_df_cols_rename=circuits_df_sel.withColumnRenamed('circuitId','circuit_id').withColumnRenamed('circuitRef','circuit_ref').withColumnRenamed('lat','latitude').withColumnRenamed('lng','longitude').withColumn('data_source',lit(data_sour))
 
 
 # COMMAND ----------
@@ -80,10 +80,15 @@ circuit_df=add_ingestion_date(circuit_df_cols_rename)
 
 container_name='processed'
 circuit_df.write.parquet(f"{processed_folder_path}/circuits",mode='overwrite')
+circuit_df.write.mode('overwrite').format("parquet").saveAsTable("f1_processed.circuits")
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"{processed_folder_path}/circuits")
+
+
+# COMMAND ----------
+
+df=spark.read.parquet("dbfs:/user/hive/warehouse/f1_processed.db/circuits")
 display(df)
 
 # COMMAND ----------
