@@ -8,6 +8,14 @@ data_source=dbutils.widgets.get('p_data_source')
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_file_date',"2021-03-21")
+
+# COMMAND ----------
+
+file_date =dbutils.widgets.get("p_file_date")
+
+# COMMAND ----------
+
 # MAGIC %run "../Includes/common_functions"
 
 # COMMAND ----------
@@ -40,7 +48,7 @@ driver_schema=StructType(fields=[StructField('driverId',IntegerType()),
                                   StructField('nationality',StringType())
                                ])
 container_name="raw"
-drivers_df=spark.read.json(f"{raw_folder_path}/drivers.json",schema=driver_schema)
+drivers_df=spark.read.json(f"{raw_folder_path}/{file_date}/drivers.json",schema=driver_schema)
 
 
 
@@ -56,8 +64,8 @@ from pyspark.sql.functions import current_timestamp
 from pyspark.sql.functions import concat,lit
 drivers_df_addcol=drivers_df.withColumnRenamed('driverID','driver_id').withColumnRenamed('driverRef','driver_ref') \
 .withColumn('date_ingested',current_timestamp()).withColumn('name',concat(drivers_df.name.forename,lit(' '),drivers_df.name.surname)) \
-.withColumn('data_source',lit(data_source)).drop('url')
-display(drivers_df_addcol)
+.withColumn('data_source',lit(data_source)).withColumn('file_date',lit(file_date)).drop('url')
+#display(drivers_df_addcol)
 
 # COMMAND ----------
 

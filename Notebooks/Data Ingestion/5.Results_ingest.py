@@ -4,6 +4,15 @@ data_source=dbutils.widgets.get('p_data_source')
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_file_date',"2021-03-21")
+p_file_date =dbutils.widgets.get("p_file_date")
+
+# COMMAND ----------
+
+print(data_source,p_file_date)
+
+# COMMAND ----------
+
 # MAGIC %run "../Includes/configuration"
 
 # COMMAND ----------
@@ -41,8 +50,8 @@ Results_schema=StructType(fields=[StructField('resultId',IntegerType()),
                                   ])
 
 
-Results_df=spark.read.json(f"{raw_folder_path}/results.json",schema=Results_schema)
-display(Results_df)
+Results_df=spark.read.json(f"{raw_folder_path}/{p_file_date}/results.json",schema=Results_schema)
+#display(Results_df)
 
 
 # COMMAND ----------
@@ -57,8 +66,8 @@ Results_df_renamed=Results_df.withColumnRenamed('resultId','result_id') \
                              .withColumnRenamed('raceId','race_id') \
                             .withColumnRenamed('driverId','driver_id') \
 .withColumnRenamed('constructorId','constructor_id').withColumnRenamed('positionText','position_text').withColumnRenamed('positionOrder','position_order').withColumnRenamed('fastestLap','fastest_lap') \
-.withColumnRenamed('fastestlapTime','fastest_lap_time').withColumnRenamed('fastestlapSpeed','fastest_lap_speed').drop(Results_df.statusId).withColumn('date_ingested',current_timestamp()).withColumn('data_source',lit(data_source))
-
+.withColumnRenamed('fastestlapTime','fastest_lap_time').withColumnRenamed('fastestlapSpeed','fastest_lap_speed').drop(Results_df.statusId).withColumn('date_ingested',current_timestamp()).withColumn('data_source',lit(data_source)).withColumn('p_file_date',lit(p_file_date))
+#display(Results_df_renamed)
 
 
 # COMMAND ----------
@@ -68,14 +77,52 @@ Results_df_renamed=Results_df.withColumnRenamed('resultId','result_id') \
 
 # COMMAND ----------
 
+#Method 1
+# for race_id_list in Results_df_renamed.select("race_id").distinct().collect():
+#     if(spark._jsparkSession.catalog().tableExists("f1_processed.results")):
+#     #spark.sql("Alter table f1_processed.results drop  if exists partition(race_id={race_id_list.race_id})")
+#         #spark.sql("Alter table f1_processed.results drop  if exists partition(race_id=={race_id_list})")
+#         spark.sql(f"ALTER TABLE f1_processed.results DROP IF EXISTS PARTITION (race_id = {race_id_list.race_id})")
 
-Results_df_renamed.write.parquet(f"{processed_folder_path}/results",mode='overwrite')
-Results_df_renamed.write.mode('overwrite').format("parquet").saveAsTable("f1_processed.results")
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"dbfs:/user/hive/warehouse/f1_processed.db/results")
-display(df)
+#Results_df_renamed.write.partitionBy('race_id').parquet(f"{processed_folder_path}/results",mode='overwrite')
+
+
+# COMMAND ----------
+
+# method 2
+
+
+# COMMAND ----------
+
+dbname_tablename='Results_df_renamed'
+col_name='race_id'
+
+list_of_cols=move_race_id_column(Results_df_renamed,col_name)
+print(list_of_cols)
+
+Results_df_renamed=Results_df_renamed.select(*list_of_cols)
+display(Results_df_renamed)
+
+
+
+# COMMAND ----------
+
+
+incremental_load("f1_processed.results",Results_df_renamed,'race_id')
+
+
+# COMMAND ----------
+
+#df=spark.read.parquet("dbfs:/user/hive/warehouse/f1_processed.db/results")
+#display(df)
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select count(*) from f1_processed.results
 
 # COMMAND ----------
 

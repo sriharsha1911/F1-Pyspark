@@ -8,6 +8,14 @@ data_sour=dbutils.widgets.get("p_data_source")
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_file_date',"2021-03-21")
+
+# COMMAND ----------
+
+file_date =dbutils.widgets.get("p_file_date")
+
+# COMMAND ----------
+
 # MAGIC %run "../Includes/configuration"
 
 # COMMAND ----------
@@ -34,7 +42,7 @@ races_schema=StructType(fields=[StructField('raceId',IntegerType(),False),
                                   
                                   ])
 
-Races_df = spark.read.csv(f"{raw_folder_path}/races.csv",header=True,schema=races_schema)
+Races_df = spark.read.csv(f"{raw_folder_path}/{file_date}/races.csv",header=True,schema=races_schema)
 
 
 # COMMAND ----------
@@ -53,11 +61,11 @@ Races_df_dropcol=Races_df.drop(Races_df.url)
 
 # COMMAND ----------
 
-from pyspark.sql.functions import concat,lit,to_timestamp
+from pyspark.sql.functions import concat,lit,to_timestamp,col
 Races_df_col_rename=Races_df_dropcol.withColumnRenamed('raceId','race_id').withColumnRenamed('year','race_year') \
 .withColumnRenamed('circuitId','circuit_id') \
-.withColumn('race_timestamp', to_timestamp(concat(Races_df_dropcol.date,lit(' '),Races_df_dropcol.time),'yyyy-MM-dd HH:mm:ss' )) \
-.withColumn('data_source',lit(data_sour))
+.withColumn("race_timestamp", to_timestamp(concat(col('date'), lit(' '), col('time')), 'yyyy-MM-dd HH:mm:ss')) \
+.withColumn('data_source',lit(data_sour)).withColumn('file_date',lit(file_date))
 
 
 # COMMAND ----------

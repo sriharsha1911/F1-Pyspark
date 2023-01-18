@@ -8,6 +8,14 @@ data_source=dbutils.widgets.get('p_data_source')
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_file_date',"2021-03-21")
+
+# COMMAND ----------
+
+file_date =dbutils.widgets.get("p_file_date")
+
+# COMMAND ----------
+
 # MAGIC %run "../Includes/configuration"
 
 # COMMAND ----------
@@ -33,14 +41,14 @@ constructor_schema=StructType(fields=[StructField('constructorId',IntegerType(),
 
 container_name = "raw" 
 
-constructor_df = spark.read.json(f"{raw_folder_path}/constructors.json",schema=constructor_schema)
+constructor_df = spark.read.json(f"{raw_folder_path}/{file_date}/constructors.json",schema=constructor_schema)
 
 
 # COMMAND ----------
 
 from pyspark.sql.functions import current_timestamp, lit
 constructor_df_ren=constructor_df.withColumnRenamed('constructorId','constructor_id').withColumnRenamed('constructorRef','constructor_ref').drop(constructor_df.url) \
-.withColumn('date_ingested',current_timestamp()).withColumn('data_source',lit(data_source))
+.withColumn('date_ingested',current_timestamp()).withColumn('data_source',lit(data_source)).withColumn('file_date',lit(file_date))
 
 
 # COMMAND ----------
