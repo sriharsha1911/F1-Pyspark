@@ -4,6 +4,11 @@ data_source=dbutils.widgets.get('p_data_source')
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_file_date',"2021-03-21")
+p_file_date =dbutils.widgets.get("p_file_date")
+
+# COMMAND ----------
+
 # MAGIC %run "../Includes/configuration"
 
 # COMMAND ----------
@@ -29,7 +34,7 @@ qualify_schema=StructType(fields=[StructField('qualifyId',IntegerType()),
                                   StructField('q3',StringType())
                                   ])
 container_name='raw'
-qualify_df=spark.read.json(f"{raw_folder_path}/qualifying",schema=qualify_schema,multiLine=True)
+qualify_df=spark.read.json(f"{raw_folder_path}/{p_file_date}/qualifying",schema=qualify_schema,multiLine=True)
 
 
 # COMMAND ----------
@@ -41,8 +46,8 @@ qualify_df_renamed=qualify_df.withColumnRenamed('raceId','race_id').withColumnRe
 
 # COMMAND ----------
 
-#qualify_df_renamed.write.parquet(f"{processed_folder_path}/qualifying",mode='overwrite')
-qualify_df_renamed.write.mode('overwrite').format("parquet").saveAsTable("f1_processed.qualifying")
+incremental_load("f1_processed.qualifying",qualify_df_renamed,'race_id')
+#overwrite_partition(qualify_df_renamed, 'f1_processed', 'qualifying', 'race_id')
 
 # COMMAND ----------
 

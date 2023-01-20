@@ -1,6 +1,15 @@
 # Databricks notebook source
+
+
+# COMMAND ----------
+
 dbutils.widgets.text('p_data_source',"")
 data_source=dbutils.widgets.get('p_data_source')
+
+# COMMAND ----------
+
+dbutils.widgets.text('p_file_date',"2021-03-21")
+p_file_date =dbutils.widgets.get("p_file_date")
 
 # COMMAND ----------
 
@@ -29,24 +38,33 @@ pitstsops_schema=StructType(fields=[StructField('raceId',IntegerType()),
 
                                   ])
 
-pitstops_df=spark.read.json(f"{raw_folder_path}/pit_stops.json",schema=pitstsops_schema,multiLine=True)
+pitstops_df=spark.read.json(f"{raw_folder_path}/{p_file_date}/pit_stops.json",schema=pitstsops_schema,multiLine=True)
+
+
+# COMMAND ----------
+
 
 
 # COMMAND ----------
 
 from pyspark.sql.functions import current_timestamp,lit
 pitstops_df_renamed=pitstops_df.withColumnRenamed('raceId','race_id').withColumnRenamed('driverId','driver_id').withColumn('date_ingested',current_timestamp()) \
-.withColumn('data_source',lit(data_source))
+.withColumn('data_source',lit(data_source)).withColumn('p_file_date',lit(p_file_date))
 
 
 # COMMAND ----------
 
-#pitstops_df_renamed.write.parquet(f"{processed_folder_path}/pit_stops",mode='overwrite')
-pitstops_df_renamed.write.mode('overwrite').format("parquet").saveAsTable("f1_processed.pit_stops")
+# MAGIC %md 
+# MAGIC load to ADLS
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"dbfs:/user/hive/warehouse/f1_processed.db/pit_stops")
+#incremental_load("f1_processed.pitstops",pitstops_df_renamed,'race_id')
+overwrite_partition(pitstops_df_renamed, 'f1_processed', 'pit_stops', 'race_id')
+
+# COMMAND ----------
+
+df=spark.read.parquet(f"dbfs:/user/hive/warehouse/f1_processed.db/pitstops")
 display(df)
 
 # COMMAND ----------

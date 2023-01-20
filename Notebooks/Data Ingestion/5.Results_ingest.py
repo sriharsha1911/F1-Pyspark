@@ -97,19 +97,6 @@ Results_df_renamed=Results_df.withColumnRenamed('resultId','result_id') \
 
 # COMMAND ----------
 
-dbname_tablename='Results_df_renamed'
-col_name='race_id'
-
-list_of_cols=move_race_id_column(Results_df_renamed,col_name)
-print(list_of_cols)
-
-Results_df_renamed=Results_df_renamed.select(*list_of_cols)
-display(Results_df_renamed)
-
-
-
-# COMMAND ----------
-
 
 incremental_load("f1_processed.results",Results_df_renamed,'race_id')
 

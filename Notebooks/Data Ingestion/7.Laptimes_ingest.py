@@ -4,6 +4,11 @@ data_source=dbutils.widgets.get('p_data_source')
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_file_date',"2021-03-21")
+p_file_date =dbutils.widgets.get("p_file_date")
+
+# COMMAND ----------
+
 # MAGIC %run "../Includes/configuration"
 
 # COMMAND ----------
@@ -19,16 +24,15 @@ spark.conf.set(f"fs.azure.account.key.{storage_account_name}.dfs.core.windows.ne
 
 from pyspark.sql.types import StructType,StructField,StringType,IntegerType,FloatType
 
-laptimes_schema=StructType(fields=[StructField('raceId',IntegerType()),
-                                    StructField('driverId',IntegerType()),
-                                    StructField('position',IntegerType()),
-                                    StructField('lap',IntegerType()),
-                                    StructField('time',StringType()),
-                                    StructField('milliseconds',IntegerType())
+laptimes_schema = StructType(fields=[StructField("raceId", IntegerType(), False),
+                                      StructField("driverId", IntegerType(), True),
+                                      StructField("lap", IntegerType(), True),
+                                      StructField("position", IntegerType(), True),
+                                      StructField("time", StringType(), True),
+                                      StructField("milliseconds", IntegerType(), True)
+                                     ])
 
-                                  ])
-container_name='raw'
-laptimes_df=spark.read.csv(f"{raw_folder_path}/lap_times",schema=laptimes_schema)
+laptimes_df=spark.read.csv(f"{raw_folder_path}/{p_file_date}/lap_times",schema=laptimes_schema)
 display(laptimes_df)
 laptimes_df.count()
 
@@ -36,14 +40,22 @@ laptimes_df.count()
 
 from pyspark.sql.functions import current_timestamp,lit
 laptimes_df_renamed=laptimes_df.withColumnRenamed('raceId','race_id').withColumnRenamed('driverId','driver_id').withColumn('date_ingested',current_timestamp()) \
-.withColumn('data_source',lit(data_source))
+.withColumn('data_source',lit(data_source)).withColumn('p_file_date',lit(p_file_date))
 
 
 # COMMAND ----------
 
-container_name='processed'
-#laptimes_df_renamed.write.parquet(f"{processed_folder_path}/lap_times",mode='overwrite')
-laptimes_df_renamed.write.mode('overwrite').format("parquet").saveAsTable("f1_processed.lap_times")
+# MAGIC %md
+# MAGIC load to ADLS
+
+# COMMAND ----------
+
+laptimes_df_renamed.dtypes
+
+# COMMAND ----------
+
+#incremental_load("f1_processed.lap_times",laptimes_df_renamed,'race_id')
+overwrite_partition(laptimes_df_renamed, 'f1_processed', 'lap_times', 'race_id')
 
 # COMMAND ----------
 
@@ -54,3 +66,8 @@ df.count()
 # COMMAND ----------
 
 dbutils.notebook.exit("Success")
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select count(*) from  f1_processed.lap_times --490904 491930
