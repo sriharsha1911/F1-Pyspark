@@ -1,0 +1,39 @@
+Data warehouse:
+they can process structured,semistructured but not unstructured
+ Data sources ->           ETL -> Data Marts -> Data Consumers (Analytics)
+ (struc,semi struc)
+ 
+ Drwbacks: 
+ no support for unstruc data.
+ takes more time to get data loaded to dw because transformation tak befor loading
+ difficult to scale on prem dws
+ lack of suppoet of ds,ml,ai
+ 
+ 
+ Data lake:                                        transfoem
+ Source    ->            -----> Data lake          ---->    Data lakes
+  (struc,semi,un struc)         (HDFS,S#, ADLS)                 |
+                                                                |
+                                                                Ai, ml
+ Drawbacks:
+ too slow to serve Bi reports.
+ to make it fast data is moved from Datalakes to datamarts which made the architecture complex
+ . No support for ACID trnsactions
+ failed job leave partil fails
+ inconsistent reads
+ cannot edit, we have to drop table or partition
+ no history or  versioning
+ difficult to combine batch and streaming work loads
+ 
+ Delta lake: is a Data lake with acid properties
+ due to acid properties we can combine streaming abd batch workloads
+ 
+ adv:
+ att types of data
+ supports bi,ai, ml workloads
+ support acid
+ no need of lambda architectutre for combining batch and sreaming
+ 
+ 
+ when storing a sparquet files delta lake also creates transaction log through which acid properties ,history ,versioimhg can be achieved
+ 

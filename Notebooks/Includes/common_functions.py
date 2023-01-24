@@ -32,6 +32,6 @@ def incremental_load(dbname_tablename,df,partition_col):
     if (spark._jsparkSession.catalog().tableExists(f"{dbname_tablename}")):
         output_df.write.mode("overwrite").insertInto(f"{dbname_tablename}")
     else:
-        output_df.write.mode("overwrite").partitionBy(partition_col).format("parquet").saveAsTable(f"{partition_col}")
+        output_df.write.mode("overwrite").partitionBy(partition_col).format("parquet").saveAsTable(f"{dbname_tablename}")
 
         
