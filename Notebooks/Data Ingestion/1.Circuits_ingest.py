@@ -99,17 +99,12 @@ circuit_df.write.mode('overwrite').format("delta").saveAsTable("f1_processed.cir
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from f1_processed.circuits
+# MAGIC select count(*) from f1_processed.circuits
 
 # COMMAND ----------
 
 df=spark.read.format("delta").load("dbfs:/user/hive/warehouse/f1_processed.db/circuits")
 display(df)
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from f1_processed.circuits
 
 # COMMAND ----------
 

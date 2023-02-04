@@ -59,13 +59,15 @@ pitstops_df_renamed=pitstops_df.withColumnRenamed('raceId','race_id').withColumn
 
 # COMMAND ----------
 
-#incremental_load("f1_processed.pitstops",pitstops_df_renamed,'race_id')
-overwrite_partition(pitstops_df_renamed, 'f1_processed', 'pit_stops', 'race_id')
+# #incremental_load("f1_processed.pitstops",pitstops_df_renamed,'race_id')
+# overwrite_partition(pitstops_df_renamed, 'f1_processed', 'pit_stops', 'race_id')
+merge_condition='tgt.driver_id=src.driver_id  and tgt.race_id=src.race_id and tgt.lap=src.lap'
+incremental_load(pitstops_df_renamed,'f1_processed','pitstops','race_id',merge_condition)
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"dbfs:/user/hive/warehouse/f1_processed.db/pitstops")
-display(df)
+# MAGIC %sql
+# MAGIC select count(*) from f1_processed.pitstops 
 
 # COMMAND ----------
 

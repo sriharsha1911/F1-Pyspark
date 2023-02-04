@@ -16,7 +16,7 @@ spark.conf.set(
     f"fs.azure.account.key.{storage_account_name}.dfs.core.windows.net",
     	f"{storage_account_key}")
 
-race_years_list=spark.read.parquet(f"{presentation_folder_path}/race_results").filter(f"p_file_date='{p_file_date}'").select("race_year").distinct().collect()
+race_years_list=spark.read.format("delta").load('dbfs:/user/hive/warehouse/f1_presentation.db/race_results').filter(f"p_file_date='{p_file_date}'").select("race_year").distinct().collect()
 
 
 # COMMAND ----------
@@ -25,7 +25,7 @@ from pyspark.sql.functions import sum, when, count, col
 new_race_year_list=[]
 for race_year in race_years_list:
      new_race_year_list.append(race_year.race_year)
-race_results_df=spark.read.parquet(f"{presentation_folder_path}/race_results").filter(col("race_year").isin(new_race_year_list))
+race_results_df=spark.read.format("delta").load('dbfs:/user/hive/warehouse/f1_presentation.db/race_results').filter(col("race_year").isin(new_race_year_list))
 display(race_results_df)
 
 # COMMAND ----------
@@ -49,7 +49,7 @@ from pyspark.sql.functions import desc, rank, asc
 constructor_rank_spec = Window.partitionBy("race_year").orderBy(desc("total_points"), desc("wins"))
 final_df = constructor_standings_df.withColumn("rank", rank().over(constructor_rank_spec))
 
-display(final_df.filter("race_year = 2020"))
+#display(final_df.filter("race_year = 2020"))
 
 # COMMAND ----------
 
@@ -58,12 +58,14 @@ display(final_df.filter("race_year = 2020"))
 # COMMAND ----------
 
 #final_df.write.parquet(f"{presentation_folder_path}/constructor_standings",mode='overwrite')
-incremental_load("f1_presentation.constructor_standings",final_df,'race_year')
+#incremental_load("f1_presentation.constructor_standings",final_df,'race_year')
+merge_condition='tgt.team=src.team  and tgt.race_year=src.race_year'
+incremental_load(final_df,'f1_presentation','team_standings','race_year',merge_condition)
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from f1_presentation.constructor_standings where race_year='2021'
+# MAGIC select * from f1_presentation.team_standings order by race_year desc
 
 # COMMAND ----------
 

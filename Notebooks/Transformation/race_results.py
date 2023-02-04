@@ -18,19 +18,19 @@ spark.conf.set(
 
 # COMMAND ----------
 
-races_df=spark.read.parquet('dbfs:/user/hive/warehouse/f1_processed.db/races').select('race_id','circuit_id','race_year','name','race_timestamp').withColumnRenamed('race_timestamp','race_date') \
+races_df=spark.read.format("delta").load('dbfs:/user/hive/warehouse/f1_processed.db/races').select('race_id','circuit_id','race_year','name','race_timestamp').withColumnRenamed('race_timestamp','race_date') \
 .withColumnRenamed('name','race_name').withColumnRenamed('race_id','ra_race_id').withColumnRenamed('circuit_id','ra_circuit_id') 
 
 display(races_df)
 
-drivers_df=spark.read.parquet('dbfs:/user/hive/warehouse/f1_processed.db/drivers').select('driver_id','name','number','nationality') \
+drivers_df=spark.read.format("delta").load('dbfs:/user/hive/warehouse/f1_processed.db/drivers').select('driver_id','name','number','nationality') \
 .withColumnRenamed('name','driver_name').withColumnRenamed('number','driver_number').withColumnRenamed('nationality','driver_nationality').withColumnRenamed('driver_id','dr_driver_id')
 
-constructors_df=spark.read.parquet('dbfs:/user/hive/warehouse/f1_processed.db/constructors').select('constructor_id','name').withColumnRenamed('name','team').withColumnRenamed('constructor_id','con_constructor_id')
+constructors_df=spark.read.format("delta").load('dbfs:/user/hive/warehouse/f1_processed.db/constructors').select('constructor_id','name').withColumnRenamed('name','team').withColumnRenamed('constructor_id','con_constructor_id')
 
-circuits_df=spark.read.parquet('dbfs:/user/hive/warehouse/f1_processed.db/circuits').select('circuit_id','location').withColumnRenamed('location','circuit_location')
+circuits_df=spark.read.format("delta").load('dbfs:/user/hive/warehouse/f1_processed.db/circuits').select('circuit_id','location').withColumnRenamed('location','circuit_location')
 
-results_df=spark.read.parquet('dbfs:/user/hive/warehouse/f1_processed.db/results').filter(f"p_file_date='{p_file_date}'").select('race_id','position','driver_id','constructor_id','grid','fastest_lap','time','points','p_file_date').withColumnRenamed('time','race_time')
+results_df=spark.read.format("delta").load('dbfs:/user/hive/warehouse/f1_processed.db/results').filter(f"p_file_date='{p_file_date}'").select('race_id','position','driver_id','constructor_id','grid','fastest_lap','time','points','p_file_date').withColumnRenamed('time','race_time')
 
 # COMMAND ----------
 
@@ -50,15 +50,11 @@ race_results_df.count()
 
 # COMMAND ----------
 
-incremental_load("f1_presentation.race_results",race_results_df,'race_id')
-#race_results_df.write.mode('overwrite').format("parquet").saveAsTable("f1_presentation.race_results")
-#race_results_df.write.parquet(f"{presentation_folder_path}/race_results",mode='overwrite')
-
-# COMMAND ----------
-
-df=spark.read.parquet("dbfs:/user/hive/warehouse/f1_presentation.db/race_results")
-display(df)
-df.count()
+# incremental_load("f1_presentation.race_results",race_results_df,'race_id')
+# #race_results_df.write.mode('overwrite').format("parquet").saveAsTable("f1_presentation.race_results")
+# #race_results_df.write.parquet(f"{presentation_folder_path}/race_results",mode='overwrite')
+merge_condition='tgt.driver_name=src.driver_name  and tgt.race_id=src.race_id'
+incremental_load(race_results_df,'f1_presentation','race_results','race_id',merge_condition)
 
 # COMMAND ----------
 

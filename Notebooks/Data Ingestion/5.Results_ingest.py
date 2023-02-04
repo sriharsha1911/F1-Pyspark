@@ -73,7 +73,16 @@ Results_df_renamed=Results_df.withColumnRenamed('resultId','result_id') \
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## writing df as parquet file to ADLS
+# MAGIC # De-dupe dataframe
+
+# COMMAND ----------
+
+results_deduped_df=Results_df_renamed.dropDuplicates(['race_id','driver_id'])
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## writing to delta table
 
 # COMMAND ----------
 
@@ -97,17 +106,17 @@ Results_df_renamed=Results_df.withColumnRenamed('resultId','result_id') \
 
 # COMMAND ----------
 
-#incremental_load("f1_processed.results",Results_df_renamed,'race_id')
-spark.conf.set("spark.databricks.optimizer.dynamicPartitionPruning",True)
-from delta.tables import DeltaTable
-if spark.catalog.tableExists("f1_processed.results"):
-    delta_table = DeltaTable.forPath(spark,"dbfs:/user/hive/warehouse/f1_processed.db/results")
-    delta_table.alias("tgt").merge(Results_df_renamed.alias("src"),  "tgt.result_id=src.result_id  and tgt.race_id=src.race_id").whenMatchedUpdateAll().whenNotMatchedInsertAll().execute()
-    #Results_df_renamed.write.mode("overwrite").insertInto("f1_processed.results")
-else:
-    Results_df_renamed.write.mode("overwrite").partitionBy('race_id').format("delta").saveAsTable("f1_processed.results")
-
-
+# #incremental_load("f1_processed.results",Results_df_renamed,'race_id')
+# spark.conf.set("spark.databricks.optimizer.dynamicPartitionPruning",True)
+# from delta.tables import DeltaTable
+# if spark.catalog.tableExists("f1_processed.results"):
+#     delta_table = DeltaTable.forPath(spark,"dbfs:/user/hive/warehouse/f1_processed.db/results")
+#     delta_table.alias("tgt").merge(Results_df_renamed.alias("src"),  "tgt.result_id=src.result_id  and tgt.race_id=src.race_id").whenMatchedUpdateAll().whenNotMatchedInsertAll().execute()
+#     #Results_df_renamed.write.mode("overwrite").insertInto("f1_processed.results")
+# else:
+#     Results_df_renamed.write.mode("overwrite").partitionBy('race_id').format("delta").saveAsTable("f1_processed.results")
+merge_condition='tgt.result_id=src.result_id  and tgt.race_id=src.race_id'
+incremental_load(results_deduped_df,'f1_processed','results','race_id',merge_condition)
 
 # COMMAND ----------
 

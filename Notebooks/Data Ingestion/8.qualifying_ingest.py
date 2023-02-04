@@ -46,13 +46,15 @@ qualify_df_renamed=qualify_df.withColumnRenamed('raceId','race_id').withColumnRe
 
 # COMMAND ----------
 
-incremental_load("f1_processed.qualifying",qualify_df_renamed,'race_id')
-#overwrite_partition(qualify_df_renamed, 'f1_processed', 'qualifying', 'race_id')
+# incremental_load("f1_processed.qualifying",qualify_df_renamed,'race_id')
+# #overwrite_partition(qualify_df_renamed, 'f1_processed', 'qualifying', 'race_id')
+merge_condition='tgt.qualify_id=src.qualify_id  and tgt.race_id=src.race_id'
+incremental_load(qualify_df_renamed,'f1_processed','qualifying','race_id',merge_condition)
 
 # COMMAND ----------
 
-df=spark.read.parquet(f"dbfs:/user/hive/warehouse/f1_processed.db/qualifying")
-display(df)
+# MAGIC %sql
+# MAGIC select count(*) from f1_processed.qualifying
 
 # COMMAND ----------
 

@@ -54,20 +54,11 @@ laptimes_df_renamed.dtypes
 
 # COMMAND ----------
 
-#incremental_load("f1_processed.lap_times",laptimes_df_renamed,'race_id')
-overwrite_partition(laptimes_df_renamed, 'f1_processed', 'lap_times', 'race_id')
-
-# COMMAND ----------
-
-df=spark.read.parquet(f"dbfs:/user/hive/warehouse/f1_processed.db/lap_times")
-display(df)
-df.count()
+# #incremental_load("f1_processed.lap_times",laptimes_df_renamed,'race_id')
+# overwrite_partition(laptimes_df_renamed, 'f1_processed', 'lap_times', 'race_id')
+merge_condition='tgt.driver_id=src.driver_id  and tgt.race_id=src.race_id and tgt.lap=src.lap'
+incremental_load(laptimes_df_renamed,'f1_processed','laptimes','race_id',merge_condition)
 
 # COMMAND ----------
 
 dbutils.notebook.exit("Success")
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select count(*) from  f1_processed.lap_times --490904 491930
